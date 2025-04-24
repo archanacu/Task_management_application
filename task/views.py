@@ -37,12 +37,16 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def report(self, request, pk=None):
-        task = self.get_object()
-        if task.status != 'completed':
-            return Response({'error': 'Report available only for completed tasks'}, status=400)
-        if request.user.role in ['admin', 'superadmin']:
-            return Response({
-                'completion_report': task.completion_report,
-                'worked_hours': task.worked_hours
-            })
-        return Response({'error': 'Access denied'}, status=403)
+            task = self.get_object()
+            
+            if task.status != 'completed':
+                return Response({'error': 'Report available only for completed tasks'}, status=400)
+
+            # Allow admin/superadmin or task owner
+            if request.user.role in ['admin', 'superadmin'] or request.user == task.assigned_to:
+                return Response({
+                    'completion_report': task.completion_report,
+                    'worked_hours': task.worked_hours
+                })
+
+            return Response({'error': 'Access denied'}, status=403)
